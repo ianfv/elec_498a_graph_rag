@@ -36,7 +36,7 @@ jobs:
           ruff format --check src/ tests/
 
   test:
-    name: Run Tests
+    name: Run tests and collect coverage
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -62,9 +62,10 @@ jobs:
           pytest tests/ -v --cov=src --cov-report=term-missing --cov-report=xml
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         if: matrix.python-version == '3.11'
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.xml
           flags: unittests
           name: codecov-umbrella

@@ -27,9 +27,9 @@ def test_health_check_endpoint(client: TestClient):
     assert data["version"] == __version__
 
 
-def test_query_endpoint_with_default_method(client: TestClient, sample_query: dict):
+def test_query_endpoint_with_default_method(client: TestClient, sample_local_query: dict):
     """Test query endpoint with default search method."""
-    response = client.post("/query", json=sample_query)
+    response = client.post("/query", json=sample_local_query)
     assert response.status_code == 200
     data = response.json()
     assert "answer" in data
@@ -38,13 +38,9 @@ def test_query_endpoint_with_default_method(client: TestClient, sample_query: di
     assert isinstance(data["citations"], list)
 
 
-def test_query_endpoint_with_global_method(client: TestClient):
+def test_query_endpoint_with_global_method(client: TestClient, sample_global_query: dict):
     """Test query endpoint with global search method."""
-    query = {
-        "question": "What are common themes in clinical guidelines?",
-        "method": "global",
-    }
-    response = client.post("/query", json=query)
+    response = client.post("/query", json=sample_global_query)
     assert response.status_code == 200
     data = response.json()
     assert data["method"] == "global"

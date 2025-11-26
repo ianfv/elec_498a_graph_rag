@@ -823,46 +823,6 @@ For new features:
 
 ---
 
-## Performance Benchmarks
-
-### Current CI/CD Performance
-
-Measured on GitHub Actions runners:
-
-| Workflow | Average Duration | Jobs | Parallelization |
-|----------|------------------|------|-----------------|
-| CI | ~2-3 minutes | 3 | Lint + Test parallel |
-| Staging | ~3-4 minutes | 3 | Test → Lint → Docker |
-| Production | ~4-5 minutes | 5 | Validate → (Test+Lint+Security) parallel |
-
-**Optimization opportunities**:
-- Caching pip dependencies (✅ implemented)
-- Parallel job execution (✅ implemented)
-- Matrix testing for multiple Python versions (ready, not enabled)
-
----
-
-## Team Contacts
-
-### CI/CD Ownership
-
-| Component | Primary Owner | Backup |
-|-----------|---------------|--------|
-| GitHub Actions Workflows | Omar A | Ian F |
-| Testing Framework | Ian F | Omar A |
-| Linting Configuration | Seb T | Nick P |
-| Docker (Phase 2) | Omar A | Seb T |
-| AWS Integration (Phase 3) | Omar A | Ian F |
-
-### Support Channels
-
-- **Team Discord**: Daily communication
-- **Notion**: Sprint planning and issue tracking
-- **GitHub Issues**: Bug reports and feature requests
-- **GitHub Discussions**: Q&A and announcements
-
----
-
 ## Additional Resources
 
 ### Documentation
@@ -943,5 +903,4 @@ After reviewing this document:
 
 **Document Version**: 1.0
 **Last Updated**: November 13, 2024
-**Author**: Claude Code (AI Assistant)
-**Maintained By**: ELEC 498A Group 08 Team
+**Author**: Ian Fairfield

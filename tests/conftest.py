@@ -20,7 +20,7 @@ def client() -> TestClient:
 
 
 @pytest.fixture
-def sample_query() -> dict[str, str]:
+def sample_local_query() -> dict[str, str]:
     """
     Sample query request for testing.
 
@@ -28,8 +28,22 @@ def sample_query() -> dict[str, str]:
         Dictionary with sample query data
     """
     return {
-        "question": "What are the treatment guidelines for diabetes?",
+        "question": "What should I monitor when treating diabetes and how often?",
         "method": "local",
+    }
+
+
+@pytest.fixture
+def sample_global_query() -> dict[str, str]:
+    """
+    Sample global request for testing.
+
+    Returns:
+        Dictionary with sample query data
+    """
+    return {
+        "question": "What are the most important steps in treating diabetes",
+        "method": "global",
     }
 
 
