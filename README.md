@@ -66,6 +66,7 @@ Our CI/CD pipeline consists of **three automated workflows** that ensure code qu
 **Purpose**: Fast feedback for feature development
 
 **Jobs Performed**:
+
 - **Lint Code**: Ruff linter and formatter checks
 - **Run Tests**: Full test suite with coverage reporting
 - **Security Check**: Dependency vulnerability scanning with Safety
@@ -78,6 +79,7 @@ Our CI/CD pipeline consists of **three automated workflows** that ensure code qu
 **Purpose**: Validate code merged to main branch
 
 **Jobs Performed**:
+
 - **Full Test Suite**: All tests with strict markers
 - **Coverage Enforcement**: Build fails if coverage < 70%
 - **Strict Linting**: No auto-fixes, zero tolerance
@@ -93,6 +95,7 @@ Our CI/CD pipeline consists of **three automated workflows** that ensure code qu
 **Purpose**: Production-grade validation for releases
 
 **Jobs Performed**:
+
 - **Version Validation**: Semantic versioning check (vX.Y.Z)
 - **Comprehensive Tests**: Full suite with enhanced reporting
 - **Coverage Enforcement**: Build fails if coverage < 80%
@@ -104,6 +107,7 @@ Our CI/CD pipeline consists of **three automated workflows** that ensure code qu
 **When It Runs**: When pushing tags matching `v[0-9]+.[0-9]+.[0-9]+`
 
 **Build Blockers**:
+
 - Coverage below 80%
 - Known security vulnerabilities
 - High-severity Bandit issues
@@ -165,6 +169,7 @@ Our CI/CD pipeline consists of **three automated workflows** that ensure code qu
 ### Code Quality Checks
 
 #### Linting (Ruff)
+
 - **Code Style**: PEP 8 compliance
 - **Import Sorting**: isort configuration
 - **Code Quality**: Pyflakes, pycodestyle rules
@@ -172,6 +177,7 @@ Our CI/CD pipeline consists of **three automated workflows** that ensure code qu
 - **Rules**: E, W, F, I, B, C4, UP rule sets
 
 #### Security Scanning
+
 - **Safety**: Checks for known vulnerabilities in dependencies
 - **Bandit**: Static code analysis for security issues
   - Blocks on high-severity issues in production
@@ -186,6 +192,7 @@ Coverage is measured using `pytest-cov` and enforced at different thresholds:
 - **Production**: ≥80% required (build fails below)
 
 **Coverage includes**:
+
 - Line coverage
 - Branch coverage
 - Source files in `src/` directory
@@ -207,17 +214,20 @@ Located in `tests/conftest.py`:
 Before pushing code to any branch, ensure:
 
 1. **Code passes linting**:
+
    ```bash
    ruff check src/ tests/
    ruff format --check src/ tests/
    ```
 
 2. **All tests pass**:
+
    ```bash
    pytest tests/ -v
    ```
 
 3. **No security vulnerabilities**:
+
    ```bash
    safety check
    ```
@@ -231,6 +241,7 @@ When merging to `main`, you must meet **stricter requirements**:
 1. **All CI checks pass** (linting, tests, security)
 
 2. **Test coverage ≥70%**:
+
    ```bash
    pytest tests/ --cov=src --cov-fail-under=70
    ```
@@ -238,6 +249,7 @@ When merging to `main`, you must meet **stricter requirements**:
 3. **Pull request approved** by at least one team member
 
 4. **No linting violations**:
+
    ```bash
    ruff check src/ tests/ --no-fix
    ```
@@ -251,11 +263,13 @@ When creating a release tag, you must meet **production standards**:
 1. **All staging checks pass** (linting, tests, security)
 
 2. **Test coverage ≥80%**:
+
    ```bash
    pytest tests/ --cov=src --cov-fail-under=80
    ```
 
 3. **No security vulnerabilities**:
+
    ```bash
    safety check
    bandit -r src/ -ll
@@ -293,18 +307,21 @@ The `main` branch is protected with these rules:
 ### Installation
 
 1. **Clone the repository**:
+
    ```bash
    git clone https://github.com/ianfv/elec_498a_graph_rag.git
    cd elec_498a_graph_rag
    ```
 
 2. **Create virtual environment**:
+
    ```bash
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
 3. **Install dependencies**:
+
    ```bash
    pip install -r requirements.txt
    ```
@@ -312,14 +329,16 @@ The `main` branch is protected with these rules:
 ### Running the Application
 
 **Start the FastAPI server**:
+
 ```bash
 uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 **Access the API**:
-- Interactive docs: http://localhost:8000/docs
-- Alternative docs: http://localhost:8000/redoc
-- Health check: http://localhost:8000/
+
+- Interactive docs: <http://localhost:8000/docs>
+- Alternative docs: <http://localhost:8000/redoc>
+- Health check: <http://localhost:8000/>
 
 ### Running Tests
 
@@ -382,9 +401,11 @@ elec_498a_graph_rag/
 ### Health & Status
 
 #### `GET /`
+
 Health check endpoint
 
 **Response**:
+
 ```json
 {
   "status": "healthy",
@@ -394,9 +415,11 @@ Health check endpoint
 ```
 
 #### `GET /health`
+
 Detailed health status
 
 **Response**:
+
 ```json
 {
   "status": "healthy",
@@ -407,9 +430,11 @@ Detailed health status
 ### Core Operations
 
 #### `POST /query`
+
 Query the knowledge graph
 
 **Request**:
+
 ```json
 {
   "question": "What are the diabetes treatment guidelines?",
@@ -418,6 +443,7 @@ Query the knowledge graph
 ```
 
 **Response**:
+
 ```json
 {
   "answer": "Based on the clinical guidelines...",
@@ -427,9 +453,11 @@ Query the knowledge graph
 ```
 
 #### `POST /index`
+
 Trigger document indexing
 
 **Request**:
+
 ```json
 {
   "documents": ["doc1.pdf", "doc2.pdf"]
@@ -437,6 +465,7 @@ Trigger document indexing
 ```
 
 **Response**:
+
 ```json
 {
   "status": "indexing_started",
@@ -445,9 +474,11 @@ Trigger document indexing
 ```
 
 #### `POST /build`
+
 Build knowledge graph
 
 **Request**:
+
 ```json
 {
   "force_rebuild": false
@@ -455,6 +486,7 @@ Build knowledge graph
 ```
 
 **Response**:
+
 ```json
 {
   "status": "build_started",
@@ -464,9 +496,9 @@ Build knowledge graph
 
 ### Documentation
 
-- **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
-- **OpenAPI JSON**: http://localhost:8000/openapi.json
+- **Swagger UI**: <http://localhost:8000/docs>
+- **ReDoc**: <http://localhost:8000/redoc>
+- **OpenAPI JSON**: <http://localhost:8000/openapi.json>
 
 ---
 
@@ -506,6 +538,7 @@ gh pr create --title "Add your feature" --body "Description of changes"
 ```
 
 **PR Checklist**:
+
 - [ ] All CI checks pass (linting, tests, security)
 - [ ] Code follows project style (Ruff compliant)
 - [ ] Tests added for new functionality
@@ -560,11 +593,13 @@ git push origin v1.0.0
 ## Documentation
 
 ### Project Documentation
+
 - [CLAUDE.md](../CLAUDE.md) - Complete project guide
 - [CICD_IMPLEMENTATION.md](CICD_IMPLEMENTATION.md) - Complete CI/CD reference (500+ lines)
 - [.github/workflows/README.md](.github/workflows/README.md) - Workflow details
 
 ### External Resources
+
 - [Microsoft GraphRAG](https://microsoft.github.io/graphrag/)
 - [GraphRAG Paper](https://arxiv.org/abs/2404.16130)
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)

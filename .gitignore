@@ -63,7 +63,9 @@ logs/
 # GraphRAG outputs
 output/
 cache/
+logs/
 *.parquet
+lancedb/
 
 # OS
 .DS_Store

@@ -101,15 +101,36 @@ jobs:
           safety check --json || true
         continue-on-error: true
 
+  docker-build:
+    name: Build Docker Image
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: graphrag-api:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
   status-check:
     name: CI Status Check
-    needs: [lint, test]
+    needs: [lint, test, docker-build]
     runs-on: ubuntu-latest
     if: always()
     steps:
       - name: Check if all jobs passed
         run: |
-          if [[ "${{ needs.lint.result }}" == "success" && "${{ needs.test.result }}" == "success" ]]; then
+          if [[ "${{ needs.lint.result }}" == "success" && "${{ needs.test.result }}" == "success" && "${{ needs.docker-build.result }}" == "success" ]]; then
             echo "✅ All CI checks passed!"
             exit 0
           else

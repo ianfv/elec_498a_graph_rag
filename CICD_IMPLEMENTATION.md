@@ -607,38 +607,6 @@ Add these to your main `README.md`:
 
 ---
 
-## Branch Protection Rules
-
-### Recommended Settings for `main` Branch
-
-1. Navigate to: **Settings** → **Branches** → **Branch protection rules**
-2. Click **Add rule**
-3. Branch name pattern: `main`
-4. Configure:
-
-**Protection Settings**:
-- ✅ Require a pull request before merging
-  - ✅ Require approvals: 1
-  - ✅ Dismiss stale pull request approvals when new commits are pushed
-  - ✅ Require review from Code Owners (if using CODEOWNERS)
-
-**Status Checks**:
-- ✅ Require status checks to pass before merging
-  - ✅ Require branches to be up to date before merging
-  - **Required checks**:
-    - `Lint Code`
-    - `Run Tests`
-    - `CI Status Check`
-
-**Additional Rules**:
-- ✅ Require conversation resolution before merging
-- ✅ Require signed commits (optional, recommended)
-- ✅ Include administrators (recommended for consistency)
-
-5. Click **Create** or **Save changes**
-
----
-
 ## Migration Path
 
 ### ✅ Phase 1: Minimal MVP (COMPLETE)
