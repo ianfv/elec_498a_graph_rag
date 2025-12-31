@@ -57,7 +57,7 @@ def test_index_documents_endpoint(client: TestClient):
     response = client.post("/index")
     assert response.status_code == 200
     data = response.json()
-    assert data["status"] == "success"
+    assert data["status"] == "completed"
     assert "message" in data
 
 
@@ -66,7 +66,7 @@ def test_build_graph_endpoint(client: TestClient):
     response = client.post("/build")
     assert response.status_code == 200
     data = response.json()
-    assert data["status"] == "success"
+    assert data["status"] == "completed"
     assert "message" in data
 
 

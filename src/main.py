@@ -46,6 +46,25 @@ class QueryResponse(BaseModel):
     method: str
 
 
+class IndexResponse(BaseModel):
+    """Index response model."""
+
+    status: str
+    message: str
+    indexed_files: list[str] = []
+    entities_extracted: int = 0
+
+
+class BuildResponse(BaseModel):
+    """Build response model."""
+
+    status: str
+    message: str
+    nodes: int = 0
+    edges: int = 0
+    communities: int = 0
+
+
 @app.get("/", response_model=HealthResponse)
 async def root() -> HealthResponse:
     """Root endpoint - health check."""
@@ -79,10 +98,7 @@ async def query(request: QueryRequest) -> QueryResponse:
     Returns:
         QueryResponse with answer and citations
     """
-    result = graphrag_service.query_graph(
-        question=request.question,
-        method=request.method
-    )
+    result = graphrag_service.query_graph(question=request.question, method=request.method)
 
     return QueryResponse(
         answer=result["answer"],
@@ -91,8 +107,8 @@ async def query(request: QueryRequest) -> QueryResponse:
     )
 
 
-@app.post("/index")
-async def index_documents() -> dict[str, str | int]:
+@app.post("/index", response_model=IndexResponse)
+async def index_documents() -> IndexResponse:
     """
     Trigger document indexing.
 
@@ -104,16 +120,16 @@ async def index_documents() -> dict[str, str | int]:
     """
     result = graphrag_service.index_documents()
 
-    return {
-        "status": result["status"],
-        "message": result.get("message", "Documents indexed successfully"),
-        "indexed_files": result.get("indexed_files", []),
-        "entities_extracted": result.get("entities_extracted", 0),
-    }
+    return IndexResponse(
+        status=result["status"],
+        message=result["message"],
+        indexed_files=result.get("indexed_files", []),
+        entities_extracted=result["entities_extracted"],
+    )
 
 
-@app.post("/build")
-async def build_graph() -> dict[str, str | int]:
+@app.post("/build", response_model=BuildResponse)
+async def build_graph() -> BuildResponse:
     """
     Build or rebuild the knowledge graph.
 
@@ -125,13 +141,13 @@ async def build_graph() -> dict[str, str | int]:
     """
     result = graphrag_service.build_graph()
 
-    return {
-        "status": result["status"],
-        "message": result.get("message", "Graph built successfully"),
-        "nodes": result.get("nodes", 0),
-        "edges": result.get("edges", 0),
-        "communities": result.get("communities", 0),
-    }
+    return BuildResponse(
+        status=result["status"],
+        message=result["message"],
+        nodes=result["nodes"],
+        edges=result["edges"],
+        communities=result["communities"],
+    )
 
 
 if __name__ == "__main__":
