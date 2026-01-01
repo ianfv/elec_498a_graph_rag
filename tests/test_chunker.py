@@ -1,13 +1,11 @@
 import pytest
-import os
-import csv
 import json
 import pandas as pd
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 # Import your actual classes
-from src.chunker import TextChunker, Chunk
+from src.chunker import TextChunker
 from src.loader import DocumentLoader
 
 TEST_DATA_DIR = Path("test_data_temp")

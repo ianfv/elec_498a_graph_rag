@@ -1,6 +1,6 @@
 import tiktoken
 import re
-from typing import List, Dict, Optional
+from typing import list, dict
 from dataclasses import dataclass, field
 
 # Global cache to prevent reloading the tokenizer model (heavy operation)
@@ -21,7 +21,7 @@ class Chunk:
     end_idx: int   # End token index relative to original doc
     token_count: int
     # Use field(default_factory...) to avoid dangerous mutable default arguments
-    metadata: Dict = field(default_factory=dict)
+    metadata: dict = field(default_factory=dict)
 
 class TextChunker:
     def __init__(self, chunk_size: int = 1200, chunk_overlap: int = 100, encoding_name: str = "cl100k_base"):
@@ -33,7 +33,7 @@ class TextChunker:
         self.chunk_overlap = chunk_overlap
         self.encoding = get_encoding_cached(encoding_name)
 
-    def chunk_by_sentences(self, text: str, doc_id: str) -> List[Chunk]:
+    def chunk_by_sentences(self, text: str, doc_id: str) -> list[Chunk]:
         """
         Recommended for GraphRAG: Respects sentence boundaries.
         Accumulates sentences until the chunk limit is reached.
@@ -126,7 +126,7 @@ class TextChunker:
         return chunks
 
 
-    def chunk_group_strings(self, text_parts: List[str], doc_id: str, metadata: Dict) -> List[Chunk]:
+    def chunk_group_strings(self, text_parts: list[str], doc_id: str, metadata: dict) -> list[Chunk]:
         """
         Groups a list of distinct strings (like CSV rows or JSON objects) into chunks.
         Tries not to split individual strings unless they exceed chunk_size.
@@ -204,7 +204,7 @@ class TextChunker:
         return chunks
 
 
-    def chunk_by_tokens(self, text: str, doc_id: str) -> List[Chunk]:
+    def chunk_by_tokens(self, text: str, doc_id: str) -> list[Chunk]:
         """
         Fast / Strict sliding window.
         Fixed to remove Unicode replacement characters from mid-token splits.

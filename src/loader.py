@@ -1,9 +1,8 @@
-import os
 import json
 import datetime
 import pandas as pd
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import list, dict
 
 # Library imports for specific file types
 try:
@@ -26,7 +25,7 @@ class DocumentLoader:
         if PdfReader: self.supported_formats.add('.pdf')
         if DocxDocument: self.supported_formats.add('.docx')
 
-    def load_directory(self, directory: str) -> List[Chunk]:
+    def load_directory(self, directory: str) -> list[Chunk]:
         """Scans directory recursively and loads all supported files."""
         path = Path(directory)
         if not path.exists():
@@ -44,7 +43,7 @@ class DocumentLoader:
                     print(f"Failed to load {file_path.name}: {e}")
         return all_chunks
 
-    def load_file(self, file_path: str) -> List[Chunk]:
+    def load_file(self, file_path: str) -> list[Chunk]:
         """Dispatches loading based on file extension."""
         path = Path(file_path)
         doc_id = path.stem
@@ -73,7 +72,7 @@ class DocumentLoader:
             print(f"Unsupported file type: {ext}")
             return []
 
-    def _apply_metadata(self, chunks: List[Chunk], metadata: Dict) -> List[Chunk]:
+    def _apply_metadata(self, chunks: list[Chunk], metadata: dict) -> list[Chunk]:
         """Merges file-level metadata with chunk-level metadata."""
         for chunk in chunks:
             combined = metadata.copy()
@@ -83,12 +82,12 @@ class DocumentLoader:
 
     # --- Unstructured Text Handlers (Use Sentence Chunking) ---
 
-    def _load_txt(self, file_path: str, doc_id: str, metadata: Dict) -> List[Chunk]:
+    def _load_txt(self, file_path: str, doc_id: str, metadata: dict) -> list[Chunk]:
         with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
             text = f.read()
         return self._apply_metadata(self.chunker.chunk_by_sentences(text, doc_id), metadata)
 
-    def _load_pdf(self, file_path: str, doc_id: str, metadata: Dict) -> List[Chunk]:
+    def _load_pdf(self, file_path: str, doc_id: str, metadata: dict) -> list[Chunk]:
         if not PdfReader:
             raise ImportError("pypdf not installed. Run `pip install pypdf`")
 
@@ -104,7 +103,7 @@ class DocumentLoader:
         full_text = "\n\n".join(text_parts)
         return self._apply_metadata(self.chunker.chunk_by_sentences(full_text, doc_id), metadata)
 
-    def _load_docx(self, file_path: str, doc_id: str, metadata: Dict) -> List[Chunk]:
+    def _load_docx(self, file_path: str, doc_id: str, metadata: dict) -> list[Chunk]:
         if not DocxDocument:
             raise ImportError("python-docx not installed. Run `pip install python-docx`")
 
@@ -115,7 +114,7 @@ class DocumentLoader:
 
     # --- Structured Data Handlers (Use Group Chunking) ---
 
-    def _load_csv(self, file_path: str, doc_id: str, metadata: Dict) -> List[Chunk]:
+    def _load_csv(self, file_path: str, doc_id: str, metadata: dict) -> list[Chunk]:
         # Use pandas to load, then convert rows to readable strings
         df = pd.read_csv(file_path)
 
@@ -130,8 +129,8 @@ class DocumentLoader:
         # Use the 'group_strings' method we added to Chunker
         return self.chunker.chunk_group_strings(row_strings, doc_id, metadata)
 
-    def _load_json(self, file_path: str, doc_id: str, metadata: Dict) -> List[Chunk]:
-        with open(file_path, 'r', encoding='utf-8') as f:
+    def _load_json(self, file_path: str, doc_id: str, metadata: dict) -> list[Chunk]:
+        with open(file_path, encoding='utf-8') as f:
             data = json.load(f)
 
         # If it's a list of records, treat them as rows
@@ -146,7 +145,7 @@ class DocumentLoader:
 
         return []
 
-    def save_chunks(self, chunks: List[Chunk], output_path: str):
+    def save_chunks(self, chunks: list[Chunk], output_path: str):
         data = [{'text': c.text, 'doc_id': c.doc_id, 'metadata': c.metadata} for c in chunks]
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
