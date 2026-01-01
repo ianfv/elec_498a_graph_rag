@@ -1,8 +1,9 @@
-import json
 import datetime
-import pandas as pd
+import json
 from pathlib import Path
-from typing import list, dict
+from typing import dict, list
+
+import pandas as pd
 
 # Library imports for specific file types
 try:
@@ -15,15 +16,18 @@ try:
 except ImportError:
     DocxDocument = None
 
-from .chunker import TextChunker, Chunk
+from .chunker import Chunk, TextChunker
+
 
 class DocumentLoader:
     def __init__(self, chunker: TextChunker = None):
         self.chunker = chunker or TextChunker()
         # Only advertise support for libraries that are actually installed
         self.supported_formats = {'.txt', '.csv', '.json'}
-        if PdfReader: self.supported_formats.add('.pdf')
-        if DocxDocument: self.supported_formats.add('.docx')
+        if PdfReader:
+            self.supported_formats.add('.pdf')
+        if DocxDocument:
+            self.supported_formats.add('.docx')
 
     def load_directory(self, directory: str) -> list[Chunk]:
         """Scans directory recursively and loads all supported files."""
@@ -83,7 +87,7 @@ class DocumentLoader:
     # --- Unstructured Text Handlers (Use Sentence Chunking) ---
 
     def _load_txt(self, file_path: str, doc_id: str, metadata: dict) -> list[Chunk]:
-        with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
+        with open(file_path,  encoding='utf-8', errors='replace') as f:
             text = f.read()
         return self._apply_metadata(self.chunker.chunk_by_sentences(text, doc_id), metadata)
 

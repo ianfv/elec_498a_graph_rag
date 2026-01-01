@@ -1,7 +1,8 @@
-import tiktoken
 import re
-from typing import list, dict
 from dataclasses import dataclass, field
+from typing import dict, list
+
+import tiktoken
 
 # Global cache to prevent reloading the tokenizer model (heavy operation)
 # on every instantiation of TextChunker.

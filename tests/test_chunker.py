@@ -1,8 +1,9 @@
-import pytest
 import json
-import pandas as pd
 from pathlib import Path
 from unittest.mock import MagicMock, patch
+
+import pandas as pd
+import pytest
 
 # Import your actual classes
 from src.chunker import TextChunker
