@@ -46,6 +46,12 @@ class QueryResponse(BaseModel):
     method: str
 
 
+class IndexRequest(BaseModel):
+    """Index/Update request model."""
+
+    method: str = "standard"  # standard or fast
+
+
 class IndexResponse(BaseModel):
     """Index response model."""
 
@@ -53,13 +59,18 @@ class IndexResponse(BaseModel):
     message: str
     indexed_files: list[str] = []
     entities_extracted: int = 0
+    nodes: int = 0
+    edges: int = 0
+    communities: int = 0
 
 
-class BuildResponse(BaseModel):
-    """Build response model."""
+class UpdateResponse(BaseModel):
+    """Update response model."""
 
     status: str
     message: str
+    updated_files: list[str] = []
+    entities_extracted: int = 0
     nodes: int = 0
     edges: int = 0
     communities: int = 0
@@ -108,42 +119,64 @@ async def query(request: QueryRequest) -> QueryResponse:
 
 
 @app.post("/index", response_model=IndexResponse)
-async def index_documents() -> IndexResponse:
+async def index_documents(request: IndexRequest = IndexRequest()) -> IndexResponse:
     """
     Trigger document indexing.
 
-    Processes documents through GraphRAG pipeline synchronously.
-    Extracts entities and prepares for graph construction.
+    Processes documents through the complete GraphRAG pipeline:
+    - Document chunking into text units
+    - Entity and relationship extraction
+    - Community detection and summarization
+    - Embedding generation
+
+    Args:
+        request: Index request containing method selection (standard/fast)
 
     Returns:
-        Status message with indexing results
+        IndexResponse with indexing results and graph statistics
     """
-    result = graphrag_service.index_documents()
+    result = graphrag_service.index_documents(method=request.method)
+
+    message = "Indexing completed successfully"
+    if result["status"] == "failed":
+        message = result.get("error", "Indexing failed")
 
     return IndexResponse(
         status=result["status"],
-        message=result["message"],
+        message=message,
         indexed_files=result.get("indexed_files", []),
         entities_extracted=result["entities_extracted"],
+        nodes=result["nodes"],
+        edges=result["edges"],
+        communities=result["communities"],
     )
 
 
-@app.post("/build", response_model=BuildResponse)
-async def build_graph() -> BuildResponse:
+@app.post("/update", response_model=UpdateResponse)
+async def update_documents(request: IndexRequest = IndexRequest()) -> UpdateResponse:
     """
-    Build or rebuild the knowledge graph.
+    Trigger incremental document update.
 
-    Constructs Neo4j graph from indexed documents synchronously.
-    Creates entities, relationships, communities, and LanceDB embeddings.
+    Processes only new or changed documents, leveraging cached results
+    for unchanged content. Communities are recomputed to include new entities.
+
+    Args:
+        request: Index request containing method selection (standard/fast)
 
     Returns:
-        Status message with graph statistics
+        UpdateResponse with update results and graph statistics
     """
-    result = graphrag_service.build_graph()
+    result = graphrag_service.update_documents(method=request.method)
 
-    return BuildResponse(
+    message = "Update completed successfully"
+    if result["status"] == "failed":
+        message = result.get("error", "Update failed")
+
+    return UpdateResponse(
         status=result["status"],
-        message=result["message"],
+        message=message,
+        updated_files=result.get("updated_files", []),
+        entities_extracted=result["entities_extracted"],
         nodes=result["nodes"],
         edges=result["edges"],
         communities=result["communities"],

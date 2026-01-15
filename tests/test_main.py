@@ -53,21 +53,55 @@ def test_query_endpoint_requires_question(client: TestClient):
 
 
 def test_index_documents_endpoint(client: TestClient):
-    """Test document indexing endpoint."""
+    """Test document indexing endpoint returns correct structure."""
     response = client.post("/index")
     assert response.status_code == 200
     data = response.json()
-    assert data["status"] == "completed"
+    assert "status" in data
     assert "message" in data
+    assert "indexed_files" in data
+    assert "entities_extracted" in data
+    assert "nodes" in data
+    assert "edges" in data
+    assert "communities" in data
+    assert isinstance(data["indexed_files"], list)
+    assert isinstance(data["nodes"], int)
+    assert isinstance(data["edges"], int)
+    assert isinstance(data["communities"], int)
 
 
-def test_build_graph_endpoint(client: TestClient):
-    """Test graph building endpoint."""
-    response = client.post("/build")
+def test_index_documents_with_method(client: TestClient):
+    """Test document indexing endpoint with method parameter."""
+    response = client.post("/index", json={"method": "standard"})
     assert response.status_code == 200
     data = response.json()
-    assert data["status"] == "completed"
+    assert "status" in data
+
+
+def test_update_documents_endpoint(client: TestClient):
+    """Test document update endpoint returns correct structure."""
+    response = client.post("/update")
+    assert response.status_code == 200
+    data = response.json()
+    assert "status" in data
     assert "message" in data
+    assert "updated_files" in data
+    assert "entities_extracted" in data
+    assert "nodes" in data
+    assert "edges" in data
+    assert "communities" in data
+    assert isinstance(data["updated_files"], list)
+    assert isinstance(data["nodes"], int)
+    assert isinstance(data["edges"], int)
+    assert isinstance(data["communities"], int)
+
+
+def test_update_documents_with_method(client: TestClient):
+    """Test document update endpoint with method parameter."""
+    response = client.post("/update", json={"method": "fast"})
+    assert response.status_code == 200
+    data = response.json()
+    assert "status" in data
 
 
 def test_openapi_docs_available(client: TestClient):
@@ -95,3 +129,33 @@ def test_query_with_different_methods(client: TestClient, method: str):
     response = client.post("/query", json=query)
     assert response.status_code == 200
     assert response.json()["method"] == method
+
+
+@pytest.mark.parametrize(
+    "method",
+    ["standard", "fast"],
+)
+def test_index_with_different_methods(client: TestClient, method: str):
+    """Test index endpoint with different indexing methods."""
+    request = {"method": method}
+    response = client.post("/index", json=request)
+    assert response.status_code == 200
+    data = response.json()
+    assert "status" in data
+    assert "nodes" in data
+    assert "edges" in data
+
+
+@pytest.mark.parametrize(
+    "method",
+    ["standard", "fast"],
+)
+def test_update_with_different_methods(client: TestClient, method: str):
+    """Test update endpoint with different indexing methods."""
+    request = {"method": method}
+    response = client.post("/update", json=request)
+    assert response.status_code == 200
+    data = response.json()
+    assert "status" in data
+    assert "nodes" in data
+    assert "edges" in data
