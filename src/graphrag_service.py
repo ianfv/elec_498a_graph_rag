@@ -64,7 +64,9 @@ class GraphRAGService:
             Appropriate IndexingMethod enum value
         """
         if is_update:
-            return IndexingMethod.StandardUpdate if method == "standard" else IndexingMethod.FastUpdate
+            return (
+                IndexingMethod.StandardUpdate if method == "standard" else IndexingMethod.FastUpdate
+            )
         return IndexingMethod.Standard if method == "standard" else IndexingMethod.Fast
 
     def _get_index_stats(self, update: bool = False) -> dict[str, int]:

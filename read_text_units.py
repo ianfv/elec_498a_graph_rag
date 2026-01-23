@@ -1,5 +1,4 @@
 import pandas as pd
-from graphrag.utils.storage import load_table_from_storage
 
 GRAPHRAG_FOLDER = "test_data/output"
 

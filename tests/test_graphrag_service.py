@@ -18,7 +18,6 @@ from graphrag.config.enums import IndexingMethod
 
 from src.graphrag_service import GraphRAGService
 
-
 # =============================================================================
 # TestGraphRAGServiceInitialization
 # =============================================================================
@@ -126,9 +125,7 @@ class TestGraphRAGServiceConfig:
         with pytest.raises(FileNotFoundError, match="Settings file not found"):
             service._load_config()
 
-    def test_config_interaction_with_graphrag_config(
-        self, temp_graphrag_root, mock_settings_yaml
-    ):
+    def test_config_interaction_with_graphrag_config(self, temp_graphrag_root, mock_settings_yaml):
         """Test that config is properly passed to load_config function."""
         service = GraphRAGService(root_dir=temp_graphrag_root)
 
@@ -208,9 +205,7 @@ class TestInternalStatsMethods:
         assert stats["edges"] == 15
         assert stats["communities"] == 3
 
-    def test_get_index_stats_from_update_output(
-        self, graphrag_service, mock_update_parquet_output
-    ):
+    def test_get_index_stats_from_update_output(self, graphrag_service, mock_update_parquet_output):
         """Test _get_index_stats reads from update_output directory."""
         stats = graphrag_service._get_index_stats(update=True)
 
@@ -258,9 +253,7 @@ class TestInternalStatsMethods:
         assert isinstance(files, list)
         assert len(files) == 0
 
-    def test_get_updated_files_from_parquet(
-        self, graphrag_service, mock_update_parquet_output
-    ):
+    def test_get_updated_files_from_parquet(self, graphrag_service, mock_update_parquet_output):
         """Test _get_updated_files reads from documents parquet."""
         files = graphrag_service._get_updated_files()
 
@@ -461,9 +454,7 @@ class TestQueryGraph:
 
     def test_query_graph_local(self, graphrag_service):
         """Test query_graph with local method."""
-        result = graphrag_service.query_graph(
-            question="What is the main theme?", method="local"
-        )
+        result = graphrag_service.query_graph(question="What is the main theme?", method="local")
 
         assert "answer" in result
         assert "citations" in result
@@ -471,9 +462,7 @@ class TestQueryGraph:
 
     def test_query_graph_global(self, graphrag_service):
         """Test query_graph with global method."""
-        result = graphrag_service.query_graph(
-            question="What is the main theme?", method="global"
-        )
+        result = graphrag_service.query_graph(question="What is the main theme?", method="global")
 
         assert "answer" in result
         assert "citations" in result
@@ -481,9 +470,7 @@ class TestQueryGraph:
 
     def test_query_graph_drift(self, graphrag_service):
         """Test query_graph with drift method."""
-        result = graphrag_service.query_graph(
-            question="What is the main theme?", method="drift"
-        )
+        result = graphrag_service.query_graph(question="What is the main theme?", method="drift")
 
         assert "answer" in result
         assert "citations" in result
@@ -491,9 +478,7 @@ class TestQueryGraph:
 
     def test_query_graph_basic(self, graphrag_service):
         """Test query_graph with basic method."""
-        result = graphrag_service.query_graph(
-            question="What is the main theme?", method="basic"
-        )
+        result = graphrag_service.query_graph(question="What is the main theme?", method="basic")
 
         assert "answer" in result
         assert "citations" in result
@@ -502,9 +487,7 @@ class TestQueryGraph:
     @pytest.mark.parametrize("method", ["local", "global", "drift", "basic"])
     def test_query_all_methods(self, graphrag_service, method):
         """Test query_graph works with all query methods."""
-        result = graphrag_service.query_graph(
-            question="Test question for GraphRAG", method=method
-        )
+        result = graphrag_service.query_graph(question="Test question for GraphRAG", method=method)
 
         assert "answer" in result
         assert "citations" in result
@@ -512,9 +495,7 @@ class TestQueryGraph:
 
     def test_query_graph_returns_citations_list(self, graphrag_service):
         """Test query_graph returns citations as a list."""
-        result = graphrag_service.query_graph(
-            question="What is the main theme?", method="local"
-        )
+        result = graphrag_service.query_graph(question="What is the main theme?", method="local")
 
         assert isinstance(result["citations"], list)
 

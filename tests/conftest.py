@@ -12,7 +12,6 @@ from fastapi.testclient import TestClient
 from src.graphrag_service import GraphRAGService
 from src.main import app
 
-
 # =============================================================================
 # Endpoint Testing Fixtures
 # =============================================================================
@@ -149,9 +148,7 @@ def mock_parquet_output(temp_graphrag_root) -> Path:
     output_dir = temp_graphrag_root / "output"
 
     # Mock entities parquet
-    entities_df = pd.DataFrame(
-        {"id": range(10), "name": [f"entity_{i}" for i in range(10)]}
-    )
+    entities_df = pd.DataFrame({"id": range(10), "name": [f"entity_{i}" for i in range(10)]})
     entities_df.to_parquet(output_dir / "create_final_entities.parquet")
 
     # Mock relationships parquet
@@ -159,9 +156,7 @@ def mock_parquet_output(temp_graphrag_root) -> Path:
     relationships_df.to_parquet(output_dir / "create_final_relationships.parquet")
 
     # Mock communities parquet
-    communities_df = pd.DataFrame(
-        {"id": range(3), "title": ["comm_1", "comm_2", "comm_3"]}
-    )
+    communities_df = pd.DataFrame({"id": range(3), "title": ["comm_1", "comm_2", "comm_3"]})
     communities_df.to_parquet(output_dir / "create_final_communities.parquet")
 
     return output_dir
@@ -182,9 +177,7 @@ def mock_update_parquet_output(temp_graphrag_root) -> Path:
     docs_df.to_parquet(update_dir / "create_final_documents.parquet")
 
     # Mock entities parquet
-    entities_df = pd.DataFrame(
-        {"id": range(5), "name": [f"entity_{i}" for i in range(5)]}
-    )
+    entities_df = pd.DataFrame({"id": range(5), "name": [f"entity_{i}" for i in range(5)]})
     entities_df.to_parquet(update_dir / "create_final_entities.parquet")
 
     # Mock relationships parquet
