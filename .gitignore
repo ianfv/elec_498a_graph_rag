@@ -89,3 +89,7 @@ dmypy.json
 cython_debug/
 CICD_IMPLEMENTATION.md
 CLAUDE.md
+
+
+# Deep Eval
+.deepeval/
