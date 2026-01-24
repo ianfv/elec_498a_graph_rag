@@ -4,12 +4,16 @@ import re
 import threading
 import time
 
+# -- adding mlx support --
+import mlx_lm
+import outlines
 import psutil
 import torch
 from deepeval import assert_test
 from deepeval.metrics import AnswerRelevancyMetric, FaithfulnessMetric
 from deepeval.models.base_model import DeepEvalBaseLLM
 from deepeval.test_case import LLMTestCase
+from pydantic import BaseModel
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 
@@ -53,7 +57,8 @@ class SystemBenchmark:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self._monitoring = False
-        self._thread.join()
+        if self._thread:
+            self._thread.join()
         self.end_time = time.time()
         self.duration = self.end_time - self.start_time
 
@@ -67,8 +72,41 @@ class SystemBenchmark:
             print(f"Peak VRAM:    {vram:.2f} MB")
 
 
+class MLXQwenEval(DeepEvalBaseLLM):
+    """
+    Uses some qwen model idk
+    """
+
+    def __init__(self, model_name="mlx-community/Qwen2.5-3B-Instruct-4bit"):
+        self.model_name = model_name
+        self._model = None
+
+    def load_model(self):
+        if self._model is None:
+            print(f"Loading model {self.model_name}")
+            self._model = outlines.from_mlxlm(*mlx_lm.load(self.model_name))
+        return self._model
+
+    def generate(self, prompt: str, schema: BaseModel) -> str:
+        """
+        DeepEval calls this to get the evaluator's judgment.
+        Includes retry logic for JSON validation.
+        """
+        model = self.load_model()
+
+        result = model(prompt, output_type=schema)
+
+        return schema.model_validate_json(result)
+
+    async def a_generate(self, prompt: str, schema: BaseModel) -> str:
+        return self.generate(prompt, schema)
+
+    def get_model_name(self):
+        return self.model_name
+
+
 # --- 2. CUSTOM DEEPEVAL EVALUATOR WITH JSON FIXING ---
-class LocalQwenEvaluator(DeepEvalBaseLLM):
+class HGQwenEval(DeepEvalBaseLLM):
     """
     Uses Qwen 2.5 14B as the DeepEval judge with JSON validation.
     Upgraded from 1.5B because smaller models cannot reliably output valid JSON.
@@ -115,6 +153,7 @@ class LocalQwenEvaluator(DeepEvalBaseLLM):
         DeepEval calls this to get the evaluator's judgment.
         Includes retry logic for JSON validation.
         """
+        generated_text = ""
         # Enhance prompt to encourage JSON output
         enhanced_prompt = f"""{prompt}
 
@@ -149,13 +188,11 @@ IMPORTANT: You must respond with ONLY valid JSON. Do not include any text before
                 json.loads(json_text)
                 return json_text
             except json.JSONDecodeError:
-                if attempt < max_retries - 1:
-                    print(f"JSON parse failed (attempt {attempt + 1}), retrying...")
-                else:
-                    print(f"Warning: Invalid JSON after {max_retries} attempts")
-                    print(f"Raw output: {generated_text[:200]}...")
-                    # Return the best attempt we have
-                    return json_text
+                print(f"JSON parse failed (attempt {attempt + 1}), retrying...")
+
+        print(f"Warning: Invalid JSON after {max_retries} attempts")
+        print(f"Raw output: {generated_text[:200]}...")
+        return f"All {max_retries} attempts of LLM generation failed. Raw output: {generated_text[:200]}..."
 
     async def a_generate(self, prompt: str) -> str:
         return self.generate(prompt)
@@ -172,13 +209,16 @@ class TriplexGraphExtractor:
 
     def __init__(self, model_name="SciPhi/Triplex"):
         print(f"Loading model under test: {model_name}...")
+
+        if torch.backends.mps.is_available():
+            self.device = torch.device("mps")
+        else:
+            self.device = torch.device("cpu")
+
         try:
             self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=False)
             self.model = AutoModelForCausalLM.from_pretrained(
-                model_name,
-                trust_remote_code=False,
-                device_map="auto",
-                torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
+                model_name, trust_remote_code=False, device_map="mps", torch_dtype=torch.float
             )
         except Exception as e:
             print(f"Built-in loading failed: {e}, trying with trust_remote_code=True")
@@ -186,43 +226,103 @@ class TriplexGraphExtractor:
             self.model = AutoModelForCausalLM.from_pretrained(
                 model_name,
                 trust_remote_code=True,
-                device_map="auto",
+                device_map="mps",
                 torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
             )
 
+        print(f"Model loaded on {next(self.model.parameters()).device}")
+
     def extract_triplets(self, text: str):
         """
-        Converts raw text into knowledge graph triplets.
+        Converts raw text into knowledge graph triplets using Triplex format.
         """
-        prompt = f"""Extract knowledge triplets from the following text.
-Format: (Subject, Predicate, Object).
+        # Define entity types and predicates for medical/clinical domain
+        entity_types = [
+            "DRUG",
+            "DISEASE",
+            "SYMPTOM",
+            "ORGAN",
+            "TISSUE",
+            "MECHANISM",
+            "EFFECT",
+            "TREATMENT",
+        ]
+        predicates = [
+            "TREATS",
+            "CAUSES",
+            "AFFECTS",
+            "INCREASES",
+            "DECREASES",
+            "WORKS_BY",
+            "SIDE_EFFECT",
+            "FIRST_LINE_FOR",
+        ]
 
-Text: {text}
+        # Construct the proper Triplex prompt
+        input_format = """Perform Named Entity Recognition (NER) and extract knowledge graph triplets from the text. NER identifies named entities of given entity types, and triple extraction identifies relationships between entities using specified predicates.
 
-Triplets:"""
+**Entity Types:**
+{entity_types}
 
-        inputs = self.tokenizer(prompt, return_tensors="pt").to(self.model.device)
+**Predicates:**
+{predicates}
+
+**Text:**
+{text}
+"""
+
+        message = input_format.format(
+            entity_types=json.dumps({"entity_types": entity_types}),
+            predicates=json.dumps({"predicates": predicates}),
+            text=text,
+        )
+
+        # Use chat template format (CRITICAL - this was missing)
+        messages = [{"role": "user", "content": message}]
+
+        # Get encoded inputs from chat template
+        encoded = self.tokenizer.apply_chat_template(
+            messages,
+            tokenize=True,
+            add_generation_prompt=True,
+            return_tensors="pt",
+            return_dict=True,
+        )
+
+        # Move tensors to device
+        input_ids = encoded["input_ids"].to(self.model.device)
+        attention_mask = encoded.get("attention_mask")
+        if attention_mask is None:
+            attention_mask = torch.ones_like(input_ids)
+        else:
+            attention_mask = attention_mask.to(self.model.device)
+
+        print(f"Input shape: {input_ids.shape}")
 
         with torch.no_grad():
             outputs = self.model.generate(
-                **inputs,
-                max_new_tokens=256,
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                max_new_tokens=1024,
                 temperature=0.1,
-                use_cache=True,
-                past_key_values=None,
+                do_sample=True,
             )
 
-        return self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+        # Decode only the new tokens
+        return self.tokenizer.decode(
+            outputs[0][input_ids.shape[1] :], skip_special_tokens=True
+        ).strip()
 
 
 # --- 4. INITIALIZE MODELS ---
 print("\n=== Initializing Models ===")
 
 # The evaluator (judge) - upgraded to 14B for reliable JSON output
-evaluator = LocalQwenEvaluator(model_name="Qwen/Qwen2.5-14B-Instruct")
+evaluator = MLXQwenEval(model_name="mlx-community/Qwen2.5-3B-Instruct-4bit")
 
 # The model being tested - uses Triplex
 extractor = TriplexGraphExtractor(model_name="SciPhi/Triplex")
+
 
 # --- 5. CONFIGURE METRICS ---
 faithfulness = FaithfulnessMetric(threshold=0.5, model=evaluator, include_reason=True)
@@ -250,12 +350,12 @@ def test_graph_construction_with_benchmarks():
     with SystemBenchmark(name="Graph Construction (Triplex)") as stats:
         generated_triplets = extractor.extract_triplets(input_text)
 
-    print(f"\nExtracted Output:\n{generated_triplets[:200]}...")
+    print(f"\nExtracted Output:\n{generated_triplets}")
 
     # Calculate throughput
     output_tokens = len(extractor.tokenizer.encode(generated_triplets))
     tokens_per_sec = output_tokens / stats.duration if stats.duration > 0 else 0
-    print(f"🚀 Throughput:   {tokens_per_sec:.2f} tokens/sec")
+    print(f"Throughput:   {tokens_per_sec:.2f} tokens/sec")
 
     # 2. Performance Assertions
     # assert stats.duration < 10.0, f"Too slow: {stats.duration}s"
