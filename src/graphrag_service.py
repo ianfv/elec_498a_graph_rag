@@ -11,11 +11,16 @@ import asyncio
 from pathlib import Path
 from typing import Any
 
+import nest_asyncio
 import pandas as pd
 from graphrag.api.index import build_index
+from graphrag.api.query import global_search, local_search
 from graphrag.config.enums import IndexingMethod
 from graphrag.config.load_config import load_config
 from graphrag.config.models.graph_rag_config import GraphRagConfig
+
+# Allow nested event loops (needed when called from FastAPI/uvicorn)
+nest_asyncio.apply()
 
 
 class GraphRAGService:
@@ -272,12 +277,13 @@ class GraphRAGService:
         """
         Query the knowledge graph.
 
-        Executes synchronous query against the knowledge graph.
-        Designed to allow future async conversion for concurrent queries.
+        Executes synchronous query against the knowledge graph using local or global search.
 
         Args:
             question: User question to answer
-            method: Search method (local|global|drift|basic)
+            method: Search method ('local' or 'global')
+                - local: Entity-focused search for specific questions
+                - global: Community-based search for thematic/holistic questions
 
         Returns:
             Dictionary with query results:
@@ -288,18 +294,127 @@ class GraphRAGService:
                 "context_data": dict (optional)
             }
         """
-        # TODO: Implement query execution
-        # 1. Validate method parameter
-        # 2. Load entities, relationships, communities from parquet
-        # 3. Execute query based on method
-        # 4. Format response with citations
-        # 5. Return structured response
+        try:
+            config = self._load_config()
+
+            if method == "local":
+                result = asyncio.run(self._query_local(question, config))
+            elif method == "global":
+                result = asyncio.run(self._query_global(question, config))
+            else:
+                return {
+                    "answer": f"Unknown search method: {method}. Use 'local' or 'global'.",
+                    "citations": [],
+                    "method": method,
+                }
+
+            return result
+
+        except FileNotFoundError as e:
+            return {
+                "answer": f"Configuration error: {e}",
+                "citations": [],
+                "method": method,
+            }
+        except Exception as e:
+            return {
+                "answer": f"Query failed: {e!s}",
+                "citations": [],
+                "method": method,
+            }
+
+    async def _query_local(self, question: str, config: GraphRagConfig) -> dict[str, Any]:
+        """
+        Execute local search query.
+
+        Local search combines knowledge graph data with text chunks for
+        entity-focused questions.
+
+        Args:
+            question: User question
+            config: GraphRAG configuration
+
+        Returns:
+            Query result dictionary
+        """
+        # Load indexed data from parquet files
+        output_dir = self.root_dir / "output"
+
+        entities = pd.read_parquet(output_dir / "entities.parquet")
+        communities = pd.read_parquet(output_dir / "communities.parquet")
+        community_reports = pd.read_parquet(output_dir / "community_reports.parquet")
+        text_units = pd.read_parquet(output_dir / "text_units.parquet")
+        relationships = pd.read_parquet(output_dir / "relationships.parquet")
+
+        # Covariates may not exist
+        covariates_path = output_dir / "covariates.parquet"
+        covariates = pd.read_parquet(covariates_path) if covariates_path.exists() else None
+
+        result = await local_search(
+            config=config,
+            entities=entities,
+            communities=communities,
+            community_reports=community_reports,
+            text_units=text_units,
+            relationships=relationships,
+            covariates=covariates,
+            community_level=2,
+            response_type="multiple paragraphs",
+            query=question,
+        )
+
+        # Result is a tuple (response, context_data)
+        response, context_data = result
 
         return {
-            "answer": f"Query execution not yet implemented for: {question}",
-            "citations": [],
-            "method": method,
+            "answer": response if isinstance(response, str) else str(response),
+            "citations": [],  # TODO: Implement citation extraction
+            "method": "local",
+            "context_data": context_data,
         }
+
+    async def _query_global(self, question: str, config: GraphRagConfig) -> dict[str, Any]:
+        """
+        Execute global search query.
+
+        Global search uses community reports for holistic/thematic questions
+        across the entire dataset.
+
+        Args:
+            question: User question
+            config: GraphRAG configuration
+
+        Returns:
+            Query result dictionary
+        """
+        # Load indexed data from parquet files
+        output_dir = self.root_dir / "output"
+
+        entities = pd.read_parquet(output_dir / "entities.parquet")
+        communities = pd.read_parquet(output_dir / "communities.parquet")
+        community_reports = pd.read_parquet(output_dir / "community_reports.parquet")
+
+        result = await global_search(
+            config=config,
+            entities=entities,
+            communities=communities,
+            community_reports=community_reports,
+            community_level=2,
+            response_type="multiple paragraphs",
+            query=question,
+        )
+
+        # Result is a tuple (response, context_data)
+        response, context_data = result
+
+        return {
+            "answer": response if isinstance(response, str) else str(response),
+            "citations": [],  # TODO: Implement citation extraction
+            "method": "global",
+            "context_data": context_data,
+        }
+
+    # TODO: Implement _extract_citations method when ready
 
     def export_graph(self, output_path: str | Path) -> dict[str, Any]:
         """
