@@ -1,78 +1,56 @@
-### This config file contains required core defaults that must be set, along with a handful of common optional settings.
-### For a full list of available settings, see https://microsoft.github.io/graphrag/config/yaml/
-
-### LLM settings ###
-## Configured for local Ollama models via LiteLLM (GraphRAG v2.7.0+)
-## Requires: ollama pull qwen2.5-coder:32b && ollama pull nomic-embed-text
+### GraphRAG Settings (v2.7 format)
+### For testing with local Ollama models
 
 models:
   default_chat_model:
-    type: chat                            # Use LiteLLM provider (not openai_chat)
-    model_provider: ollama                # LiteLLM routes to Ollama
-    api_base: http://localhost:11434      # Ollama server URL (no /v1 needed for LiteLLM)
-    api_key: ollama                       # Placeholder (Ollama doesn't require auth)
-    model: qwen2.5-coder:32b              # Your local Ollama model
-    model_supports_json: true             # Qwen models support JSON mode
-    concurrent_requests: 1                # Lower for local GPU memory
-    async_mode: threaded                  # Threaded works better for local models
-    retry_strategy: exponential_backoff   # Better retry strategy for local models
-    max_retries: 5                        # Fewer retries needed locally
-    tokens_per_minute: null               # Disable rate limiting for local
-    requests_per_minute: null             # Disable rate limiting for local
-    request_timeout: 300                  # 5 min timeout for slow local inference
+    type: openai_chat
+    api_base: http://localhost:11434/v1
+    api_key: ollama
+    model: qwen2.5-coder:32b
+    encoding_model: cl100k_base
+    request_timeout: 300
+    max_retries: 5
+    concurrent_requests: 1
 
   default_embedding_model:
-    type: embedding                       # Use LiteLLM embedding provider
-    model_provider: ollama                # LiteLLM routes to Ollama
-    api_base: http://localhost:11434      # Ollama server URL
-    api_key: ollama                       # Placeholder
-    model: nomic-embed-text               # Your local Ollama embedding model
-    concurrent_requests: 5                # Can handle more concurrent embedding requests
-    async_mode: threaded
-    retry_strategy: exponential_backoff
+    type: openai_embedding
+    api_base: http://localhost:11434/v1
+    api_key: ollama
+    model: nomic-embed-text
+    encoding_model: cl100k_base
+    concurrent_requests: 5
     max_retries: 5
-    tokens_per_minute: null
-    requests_per_minute: null
 
 ### Input settings ###
-
 input:
-  storage:
-    type: file # or blob
-    base_dir: "input"
-  file_type: text # [csv, text, json]
-  
+  type: file
+  file_type: text
+  base_dir: "input"
 
-chunks:
-  size: 500                               # Reduced from 1200 for local models (less context pressure)
+### Chunking settings ###
+chunking:
+  size: 1200
   overlap: 100
-  group_by_columns: [id]
 
-### Output/storage settings ###
-## If blob storage is specified in the following four sections,
-## connection_string and container_name must be provided
-
+### Output settings ###
 output:
-  type: file # [file, blob, cosmosdb]
+  type: file
   base_dir: "output"
-    
+
 cache:
-  type: file # [file, blob, cosmosdb]
+  type: file
   base_dir: "cache"
 
 reporting:
-  type: file # [file, blob]
+  type: file
   base_dir: "logs"
 
 vector_store:
   default_vector_store:
     type: lancedb
     db_uri: output/lancedb
-    container_name: default
-    overwrite: True
 
 ### Workflow settings ###
-
 embed_text:
   model_id: default_embedding_model
   vector_store_id: default_vector_store
@@ -80,28 +58,19 @@ embed_text:
 extract_graph:
   model_id: default_chat_model
   prompt: "prompts/extract_graph.txt"
-  entity_types: [organization,person,geo,event]
-  max_gleanings: 0                        # Reduced from 1 for faster local processing
+  entity_types: [organization, person, geo, event]
+  max_gleanings: 0
 
 summarize_descriptions:
   model_id: default_chat_model
   prompt: "prompts/summarize_descriptions.txt"
   max_length: 500
 
-extract_graph_nlp:
-  text_analyzer:
-    extractor_type: regex_english # [regex_english, syntactic_parser, cfg]
-  async_mode: threaded # or asyncio
-
 cluster_graph:
   max_cluster_size: 10
 
 extract_claims:
   enabled: false
-  model_id: default_chat_model
-  prompt: "prompts/extract_claims.txt"
-  description: "Any claims or facts that could be relevant to information discovery."
-  max_gleanings: 1
 
 community_reports:
   model_id: default_chat_model
@@ -110,20 +79,7 @@ community_reports:
   max_length: 2000
   max_input_length: 8000
 
-embed_graph:
-  enabled: false # if true, will generate node2vec embeddings for nodes
-
-umap:
-  enabled: false # if true, will generate UMAP embeddings for nodes (embed_graph must also be enabled)
-
-snapshots:
-  graphml: false
-  embeddings: false
-
 ### Query settings ###
-## The prompt locations are required here, but each search method has a number of optional knobs that can be tuned.
-## See the config docs: https://microsoft.github.io/graphrag/config/yaml/#query
-
 local_search:
   chat_model_id: default_chat_model
   embedding_model_id: default_embedding_model
@@ -133,15 +89,3 @@ global_search:
   chat_model_id: default_chat_model
   map_prompt: "prompts/global_search_map_system_prompt.txt"
   reduce_prompt: "prompts/global_search_reduce_system_prompt.txt"
-  knowledge_prompt: "prompts/global_search_knowledge_system_prompt.txt"
-
-drift_search:
-  chat_model_id: default_chat_model
-  embedding_model_id: default_embedding_model
-  prompt: "prompts/drift_search_system_prompt.txt"
-  reduce_prompt: "prompts/drift_search_reduce_prompt.txt"
-
-basic_search:
-  chat_model_id: default_chat_model
-  embedding_model_id: default_embedding_model
-  prompt: "prompts/basic_search_system_prompt.txt"

@@ -35,7 +35,7 @@ class QueryRequest(BaseModel):
     """Query request model."""
 
     question: str
-    method: str = "local"  # local, global, drift, basic
+    method: str = "local"  # local or global
 
 
 class QueryResponse(BaseModel):
