@@ -8,20 +8,19 @@ This module provides synchronous wrappers around the GraphRAG library for:
 """
 
 import asyncio
-
-import nest_asyncio
-
-# Allow nested event loops (needed when called from FastAPI/uvicorn)
-nest_asyncio.apply()
 from pathlib import Path
 from typing import Any
 
+import nest_asyncio
 import pandas as pd
 from graphrag.api.index import build_index
 from graphrag.api.query import global_search, local_search
 from graphrag.config.enums import IndexingMethod
 from graphrag.config.load_config import load_config
 from graphrag.config.models.graph_rag_config import GraphRagConfig
+
+# Allow nested event loops (needed when called from FastAPI/uvicorn)
+nest_asyncio.apply()
 
 
 class GraphRAGService:
@@ -340,13 +339,13 @@ class GraphRAGService:
         """
         # Load indexed data from parquet files
         output_dir = self.root_dir / "output"
-        
+
         entities = pd.read_parquet(output_dir / "entities.parquet")
         communities = pd.read_parquet(output_dir / "communities.parquet")
         community_reports = pd.read_parquet(output_dir / "community_reports.parquet")
         text_units = pd.read_parquet(output_dir / "text_units.parquet")
         relationships = pd.read_parquet(output_dir / "relationships.parquet")
-        
+
         # Covariates may not exist
         covariates_path = output_dir / "covariates.parquet"
         covariates = pd.read_parquet(covariates_path) if covariates_path.exists() else None
@@ -390,7 +389,7 @@ class GraphRAGService:
         """
         # Load indexed data from parquet files
         output_dir = self.root_dir / "output"
-        
+
         entities = pd.read_parquet(output_dir / "entities.parquet")
         communities = pd.read_parquet(output_dir / "communities.parquet")
         community_reports = pd.read_parquet(output_dir / "community_reports.parquet")
