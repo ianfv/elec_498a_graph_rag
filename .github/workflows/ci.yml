@@ -128,6 +128,12 @@ jobs:
     runs-on: ubuntu-latest
     if: always()
     steps:
+      - name: Debug job results
+        run: |
+          echo "Lint result: ${{ needs.lint.result }}"
+          echo "Test result: ${{ needs.test.result }}"
+          echo "Docker-build result: ${{ needs.docker-build.result }}"
+
       - name: Check if all jobs passed
         run: |
           if [[ "${{ needs.lint.result }}" == "success" && "${{ needs.test.result }}" == "success" && "${{ needs.docker-build.result }}" == "success" ]]; then
